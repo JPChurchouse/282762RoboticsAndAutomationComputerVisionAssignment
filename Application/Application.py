@@ -1,35 +1,61 @@
+
+# https://cvexplained.wordpress.com/2020/04/28/color-detection-hsv/#:~:text=inrange%20function%20with%20the%20range,10%20and%20160%20to%20180.
 import cv2 
 import numpy as np
 
 import os
 import sys
 
-# remove white
-hsv_low_white = np.array([0,52,0])
-hsv_high_white = np.array([255,255,255])
-
-# 
 
 
 
 # Function to process images
-def process_image(image_input):
-    grey = cv2.cvtColor(image_input, cv2.COLOR_BGR2GRAY)
-    #blur = cv2.GaussianBlur(grey, (11, 11), 0)
-    circles	= cv2.HoughCircles(grey,cv2.HOUGH_GRADIENT,1,120,param1=100,param2=30,minRadius=0,maxRadius=0)
-    circles	= np.uint16(np.around(circles))
+def process_image(img_input):
 
-    for i in circles[0,:]:
-        cv2.circle(image_input, (i[0], i[1]), i[2], (0,255,0), 2)
-        
+    # Blur image slightly to reduce noise
+    blr_siz = 49
+    img_blur = cv2.GaussianBlur(img_input, (blr_siz, blr_siz), 0)
+
+    # Convert to HSV for processing
+    img_hsv = cv2.cvtColor(img_blur, cv2.COLOR_BGR2HSV)
     
     
-    return image_input
+
+    # HSV boundaries
+    s_min = 60.0
+    v_min = 20.0
+    h_max = 80.0
+    h_min = 160.0
+
+    # lower boundary RED color range values; Hue (0 - 10)
+    hsv_A_lo = np.array([ 0.0,  s_min,  v_min]) # Cutoff white
+    hsv_A_hi = np.array([h_max, 255.0, 255.0]) # Pure red -> green/
+    
+    # upper boundary RED color range values; Hue (160 - 180)
+    hsv_B_lo = np.array([h_min,  s_min,  v_min]) # Cutoff white
+    hsv_B_hi = np.array([180.0, 255.0, 255.0]) # Magenta/ -> Red
+
+    # Run maskwork
+    mask_A = cv2.inRange(img_hsv, hsv_A_lo, hsv_A_hi)
+    mask_B = cv2.inRange(img_hsv, hsv_B_lo, hsv_B_hi)
+    
+    mask_cutout = mask_A + mask_B
+
+
+    kernel = np.ones((9,9),np.uint8)
+    mask_shrink = cv2.morphologyEx(mask_cutout, cv2.MORPH_CLOSE,kernel)
+
+    img_overlay = cv2.bitwise_and(img_input, img_input, mask=mask_shrink)
+
+    # canny edges, make cirlces
+
+    return img_overlay
 
 
 
 
 def main():
+    print("BEGIN")
 
     ## Declare input and output directories
     directory_input = os.getcwd() + "/Resources"
@@ -62,9 +88,9 @@ def main():
 
         # Save and display
         cv2.imwrite(targ_path_out, targ_image_out)
-        cv2.imshow(f"{targ_name_out}", targ_image_out)
+        #cv2.imshow(f"{targ_name_out}", targ_image_out)
 
-
+    print("DONE")
     # Destroy all images at end
     cv2.waitKey(0)
     cv2.destroyAllWindows()
