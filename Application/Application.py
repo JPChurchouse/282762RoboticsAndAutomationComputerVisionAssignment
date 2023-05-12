@@ -1,3 +1,4 @@
+# ACKNOWLEDGMENTS:
 # https://shrishailsgajbhar.github.io/post/OpenCV-Apple-detection-counting
 # https://cvexplained.wordpress.com/2020/04/28/color-detection-hsv/#:~:text=inrange%20function%20with%20the%20range,10%20and%20160%20to%20180.
 # https://techtutorialsx.com/2020/11/29/python-opencv-copy-image/
