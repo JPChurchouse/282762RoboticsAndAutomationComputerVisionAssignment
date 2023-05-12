@@ -1,11 +1,17 @@
-
+# https://shrishailsgajbhar.github.io/post/OpenCV-Apple-detection-counting
 # https://cvexplained.wordpress.com/2020/04/28/color-detection-hsv/#:~:text=inrange%20function%20with%20the%20range,10%20and%20160%20to%20180.
+# https://techtutorialsx.com/2020/11/29/python-opencv-copy-image/
+# https://codeloop.org/python-opencv-circle-detection-with-houghcircles/
+# https://www.youtube.com/watch?v=8CMTqpZoec8
+# https://stackoverflow.com/questions/58353513/detecting-apple-by-thresholding
+# 
+
+
 import cv2 
 import numpy as np
 
 import os
 import sys
-
 
 
 
@@ -50,23 +56,29 @@ def process_image(img_input):
 
     img_blur	= cv2.medianBlur(mask_shrink,	5)
     
-    circles	= cv2.HoughCircles(img_blur,cv2.HOUGH_GRADIENT,
+    detections	= cv2.HoughCircles(img_blur,cv2.HOUGH_GRADIENT,
                                dp=1.3,
                                minDist=100, 
                                param1=130,
                                param2=20,
-                               minRadius=40,
+                               minRadius=60,
                                maxRadius=150
                                )
-    if circles is None: return img_input
-    circles	= np.uint16(np.around(circles))
+    if detections is None: return img_input
+    detections	= np.uint16(np.around(detections))
     
     img_out = img_input.copy()
-    for	i in circles[0,:]:
+    for	index, apples in enumerate(detections[0,:], start=1):
         #	draw	the	outer	circle
-        cv2.circle(img_out,(i[0],i[1]),i[2],(0,255,0),6)
+        cv2.circle(img_out,(apples[0],apples[1]),apples[2],(255,255,255),6)
         #	draw	the	center	of	the	circle
-        cv2.circle(img_out,(i[0],i[1]),2,(0,0,255),3)
+        cv2.circle(img_out,(apples[0],apples[1]),2,(255,255,255),4)
+        cv2.putText(img_out,f"{index}",(apples[0]-20,apples[1]-15),cv2.FONT_HERSHEY_SIMPLEX,1.5,(255,255,255),2)
+    
+
+    # Print a total on the image
+    cv2.rectangle(img_out, (0,0), (300,40),(0,0,0),cv2.FILLED)
+    cv2.putText(img_out,f"Total apples: {len(detections[0,:])}",(1,30),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),2)
     
     return img_out
 
