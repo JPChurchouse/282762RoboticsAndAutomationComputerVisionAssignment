@@ -20,10 +20,10 @@ def process_image(img_input):
 
     # Blur image slightly to reduce noise
     blr_siz = 49
-    img_blur = cv2.GaussianBlur(img_input, (blr_siz, blr_siz), 0)
+    mask_blur = cv2.GaussianBlur(img_input, (blr_siz, blr_siz), 0)
 
     # Convert to HSV for processing
-    img_hsv = cv2.cvtColor(img_blur, cv2.COLOR_BGR2HSV)
+    img_hsv = cv2.cvtColor(mask_blur, cv2.COLOR_BGR2HSV)
     
     
 
@@ -51,12 +51,10 @@ def process_image(img_input):
     kernel = np.ones((21,21),np.uint8)
     mask_shrink = cv2.morphologyEx(mask_cutout, cv2.MORPH_OPEN,kernel)
 
-    img_overlay = cv2.bitwise_and(img_input, img_input, mask=mask_shrink)
 
-
-    img_blur	= cv2.medianBlur(mask_shrink,	5)
+    mask_blur	= cv2.medianBlur(mask_shrink,	5)
     
-    detections	= cv2.HoughCircles(img_blur,cv2.HOUGH_GRADIENT,
+    detections	= cv2.HoughCircles(mask_blur,cv2.HOUGH_GRADIENT,
                                dp=1.3,
                                minDist=100, 
                                param1=130,
@@ -64,6 +62,7 @@ def process_image(img_input):
                                minRadius=60,
                                maxRadius=150
                                )
+    
     if detections is None: return img_input
     detections	= np.uint16(np.around(detections))
     
