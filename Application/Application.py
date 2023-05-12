@@ -16,11 +16,11 @@ import sys
 
 
 # Function to process images
-def process_image(img_input):
+def process_image(img_in):
 
     # Blur image slightly to reduce noise
-    blr_siz = 49
-    mask_blur = cv2.GaussianBlur(img_input, (blr_siz, blr_siz), 0)
+    ker_siz = 49
+    mask_blur = cv2.GaussianBlur(img_in, (ker_siz, ker_siz), 0)
 
     # Convert to HSV for processing
     img_hsv = cv2.cvtColor(mask_blur, cv2.COLOR_BGR2HSV)
@@ -34,53 +34,59 @@ def process_image(img_input):
     h_min = 160.0
 
     # lower boundary RED color range values; Hue (0 - 10)
-    hsv_A_lo = np.array([ 0.0,  s_min,  v_min]) # Cutoff white
+    hsv_A_lo = np.array([  0.0, s_min, v_min]) # Cutoff white
     hsv_A_hi = np.array([h_max, 255.0, 255.0]) # Pure red -> green/
     
     # upper boundary RED color range values; Hue (160 - 180)
-    hsv_B_lo = np.array([h_min,  s_min,  v_min]) # Cutoff white
+    hsv_B_lo = np.array([h_min, s_min, v_min]) # Cutoff white
     hsv_B_hi = np.array([180.0, 255.0, 255.0]) # Magenta/ -> Red
 
     # Run maskwork
     mask_A = cv2.inRange(img_hsv, hsv_A_lo, hsv_A_hi)
     mask_B = cv2.inRange(img_hsv, hsv_B_lo, hsv_B_hi)
     
-    mask_cutout = mask_A + mask_B
+    # combine to make final mask
+    mask_final = mask_A + mask_B
 
 
-    kernel = np.ones((21,21),np.uint8)
-    mask_shrink = cv2.morphologyEx(mask_cutout, cv2.MORPH_OPEN,kernel)
 
-
-    mask_blur	= cv2.medianBlur(mask_shrink,	5)
+    # dilation
+    ker_siz = 7
+    kernel = np.ones((ker_siz,ker_siz), np.uint8)
+    #mask_open = cv2.morphologyEx(mask_final, cv2.MORPH_CLOSE, kernel, iterations=3)
+    mask_open = cv2.morphologyEx(mask_final, cv2.MORPH_OPEN, kernel, iterations=3)
+    #mask_open = cv2.erode(mask_final, kernel, iterations=3)
+    #mask_open	= cv2.medianBlur(mask_open,	3)
     
-    detections	= cv2.HoughCircles(mask_blur,cv2.HOUGH_GRADIENT,
+    detections	= cv2.HoughCircles(mask_open,cv2.HOUGH_GRADIENT,
                                dp=1.3,
                                minDist=100, 
                                param1=130,
                                param2=20,
                                minRadius=60,
-                               maxRadius=150
+                               maxRadius=130
                                )
     
-    if detections is None: return img_input
+    if detections is None: return img_in
     detections	= np.uint16(np.around(detections))
+
+    col_G = (0,255,0)
+    col_W = (255,255,255)
+    col_B = (0,0,0)
     
-    img_out = img_input.copy()
+    img_out = img_in#cv2.cvtColor(mask_open, cv2.COLOR_GRAY2BGR)
     for	index, apples in enumerate(detections[0,:], start=1):
         #	draw	the	outer	circle
-        cv2.circle(img_out,(apples[0],apples[1]),apples[2],(255,255,255),6)
+        cv2.circle(img_out,(apples[0],apples[1]),apples[2],col_G,6)
         #	draw	the	center	of	the	circle
-        cv2.circle(img_out,(apples[0],apples[1]),2,(255,255,255),4)
-        cv2.putText(img_out,f"{index}",(apples[0]-20,apples[1]-15),cv2.FONT_HERSHEY_SIMPLEX,1.5,(255,255,255),2)
+        cv2.circle(img_out,(apples[0],apples[1]),2,col_G,4)
+        cv2.putText(img_out,f"{index}",(apples[0]-20,apples[1]-15),cv2.FONT_HERSHEY_SIMPLEX,1.5,col_W,2)
     
-
     # Print a total on the image
-    cv2.rectangle(img_out, (0,0), (300,40),(0,0,0),cv2.FILLED)
-    cv2.putText(img_out,f"Total apples: {len(detections[0,:])}",(1,30),cv2.FONT_HERSHEY_SIMPLEX,1,(255,255,255),2)
+    cv2.rectangle(img_out, (0,0), (300,40),col_B,cv2.FILLED)
+    cv2.putText(img_out,f"Total apples: {len(detections[0,:])}",(1,30),cv2.FONT_HERSHEY_SIMPLEX,1,col_W,2)
     
     return img_out
-
 
 
 
