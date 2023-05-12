@@ -42,14 +42,33 @@ def process_image(img_input):
     mask_cutout = mask_A + mask_B
 
 
-    kernel = np.ones((9,9),np.uint8)
-    mask_shrink = cv2.morphologyEx(mask_cutout, cv2.MORPH_CLOSE,kernel)
+    kernel = np.ones((21,21),np.uint8)
+    mask_shrink = cv2.morphologyEx(mask_cutout, cv2.MORPH_OPEN,kernel)
 
     img_overlay = cv2.bitwise_and(img_input, img_input, mask=mask_shrink)
 
-    # canny edges, make cirlces
 
-    return img_overlay
+    img_blur	= cv2.medianBlur(mask_shrink,	5)
+    
+    circles	= cv2.HoughCircles(img_blur,cv2.HOUGH_GRADIENT,
+                               dp=1.3,
+                               minDist=100, 
+                               param1=130,
+                               param2=20,
+                               minRadius=40,
+                               maxRadius=150
+                               )
+    if circles is None: return img_input
+    circles	= np.uint16(np.around(circles))
+    
+    img_out = img_input.copy()
+    for	i in circles[0,:]:
+        #	draw	the	outer	circle
+        cv2.circle(img_out,(i[0],i[1]),i[2],(0,255,0),6)
+        #	draw	the	center	of	the	circle
+        cv2.circle(img_out,(i[0],i[1]),2,(0,0,255),3)
+    
+    return img_out
 
 
 
