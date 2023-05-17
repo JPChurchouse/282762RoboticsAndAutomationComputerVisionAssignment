@@ -11,8 +11,27 @@ import numpy as np
 import os
 import sys
 
+# Save intermediate files
+def save(img,thing,name):
+    directory_intermediate = os.getcwd() + "/Intermediate"
+    if not os.path.exists(directory_intermediate): os.makedirs(directory_intermediate)
+    targ_name_out = thing + "_" + name
+    targ_path_out = os.path.join(directory_intermediate, targ_name_out)
+    cv2.imwrite(targ_path_out, img)
+
 # Function to process images
-def process_image(img_in):
+def process_image(img_in,name):
+
+    fail1 = cv2.cvtColor(img_in,cv2.COLOR_BGR2GRAY)
+    fail2 = cv2.HoughCircles(fail1,cv2.HOUGH_GRADIENT,dp=1.1,minDist=80,param1=100,param2=20,minRadius=20,maxRadius=150)
+    fail3 = img_in
+    if fail2 is not None:
+        col_G = (0,255,0)
+        detections	= np.uint16(np.around(fail2))
+        num_apl = len(detections[0,:])
+        for	index, apples in enumerate(detections[0,:], start=1): 
+            cv2.circle(fail3,(apples[0],apples[1]),apples[2],col_G,6)
+    save(fail3,"first",name)
 
     ###  CREATE MASK  ###
 
@@ -20,6 +39,8 @@ def process_image(img_in):
     ker_siz = 49
     img_blr = cv2.GaussianBlur(img_in, (ker_siz, ker_siz), 0)
     img_hsv = cv2.cvtColor(img_blr, cv2.COLOR_BGR2HSV)
+    
+    save(img_hsv,"hsv",name)
 
     # Define HSV boundaries
     s_min = 60.0
@@ -38,6 +59,8 @@ def process_image(img_in):
     mask_A = cv2.inRange(img_hsv, hsv_A_lo, hsv_A_hi)
     mask_B = cv2.inRange(img_hsv, hsv_B_lo, hsv_B_hi)
     mask_fin = mask_A + mask_B
+
+    save(mask_fin,"mask",name)
 
     ### APPLE DETECTION ###
 
@@ -95,7 +118,7 @@ def main():
     # Declare input and output directories
     directory_input = os.getcwd() + "/Resources"
     directory_output = os.getcwd() + "/Output"
-
+    
     # Throw error if input directory does not exist
     assert os.path.exists(directory_input), "Path error"
 
@@ -114,10 +137,10 @@ def main():
         assert targ_image_in is not None, "Image not found"
         
         # Process image
-        targ_image_out, num_apples = process_image(targ_image_in)
+        targ_image_out, num_apples = process_image(targ_image_in,targ_name_in)
 
         # Save and display
-        targ_name_out = f"{num_apples}_" + targ_name_in
+        targ_name_out = f"Out[{num_apples}]_" + targ_name_in
         targ_path_out = os.path.join(directory_output, targ_name_out)
         cv2.imwrite(targ_path_out, targ_image_out)
         #cv2.imshow(f"{targ_name_out}", targ_image_out)
